@@ -47,10 +47,10 @@ def _(chart, mo, ui, ui_dropdown, ui_file):
 
 @app.cell
 def _(file, np, pl, ui_file):
-    if ui_file.value:
-        file_name = file.value
-    else:
-        file_name = "apps/2014001_C2_03.npz"
+    # if ui_file.value:
+    file_name = file.value
+    # else:
+    #     file_name = "apps/2014001_C2_03.npz"
 
     with np.load(file_name) as npz_file:
         _alldata = dict(npz_file.items())
@@ -160,9 +160,9 @@ def _(mo):
 
 @app.cell
 def _():
-    import polars as pl
     import altair as alt
     import numpy as np
+    import polars as pl
     import sillywalk
 
     return alt, np, pl, sillywalk
