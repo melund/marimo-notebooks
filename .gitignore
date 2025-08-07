@@ -177,3 +177,6 @@ cython_debug/
 .DS_Store
 .marimo
 test/
+# pixi environments
+.pixi/*
+!.pixi/config.toml

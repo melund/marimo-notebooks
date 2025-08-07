@@ -46,7 +46,7 @@ This repository includes several templates for the generated site:
 To use a specific template, pass the `--template` parameter to the build script:
 
 ```bash
-uv run .github/scripts/build.py --template templates/tailwind.html.j2
+pixi run python .github/scripts/build.py --template templates/tailwind.html.j2
 ```
 
 You can also create your own custom templates. See the [templates/README.md](templates/README.md) for more information.
@@ -56,13 +56,13 @@ You can also create your own custom templates. See the [templates/README.md](tem
 To test the export process, run `.github/scripts/build.py` from the root directory.
 
 ```bash
-uv run .github/scripts/build.py
+pixi run python .github/scripts/build.py
 ```
 
 This will export all notebooks in a folder called `_site/` in the root directory. Then to serve the site, run:
 
 ```bash
-python -m http.server -d _site
+pixi run python -m http.server -d _site
 ```
 
 This will serve the site at `http://localhost:8000`.

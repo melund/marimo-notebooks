@@ -1,0 +1,28 @@
+[workspace]
+authors = ["Morten Enemark Lund <mel@anybodytech.com>"]
+channels = ["https://prefix.dev/conda-forge", "https://prefix.dev/anybody"]
+name = "marimo-notebooks"
+platforms = ["win-64", "linux-64"]
+version = "0.1.0"
+preview = ["pixi-build"]
+
+[tasks]
+start = "build.py --output_dir _site --template templates/tailwind.html.j2"
+
+
+
+[dependencies]
+marimo = ">=0.14.16,<0.15"
+polars = ">=1.32.0,<2"
+altair = ">=5.5.0,<6"
+loguru = ">=0.7.3,<0.8"
+fire = ">=0.7.0,<0.8"
+jinja2 = ">=3.1.6,<4"
+numpy = ">=2.3.2,<3"
+pandas = ">=2.3.1,<3"
+vega_datasets = ">=0.9.0,<0.10"
+pyarrow = ">=21.0.0,<22"
+sillywalk  = "*"
+python-lsp-server = ">=1.13.0,<2"
+narwhals = "*"
+scikit-learn = "*"
