@@ -28,22 +28,49 @@ def _(all_df, np, pl, ui, ui_dropdown):
         correction = np.linspace(0.5*(y[-1]-y[0]), 0.5*(y[0]-y[-1]), len(y))
         return y + correction
 
-    normalized_data = raw_data
+    def windowed_correction(y):
+        """Add Tukey window correction to y so that the last element coincides with the first."""
+        N = len(y)
+        if N < 2:
+            return y
+        wl = int(N*ui["number_window"].value)
+        hp_wnd = hann_poisson_window(wl*2, 2)
+        window = np.concatenate((hp_wnd[-wl:], np.zeros(N-2*wl), hp_wnd[:wl]))
+        lin_correction = np.linspace(0.5*(y[-1]-y[0]), 0.5*(y[0]-y[-1]), N)
+        correction = np.multiply(lin_correction, window)
+        return y + correction
+
+    def hann_poisson_window(N, alpha):
+        n_values = np.arange(1, N + 1)
+        # Calculate the Hann part
+        hann_part = 0.5 * (1 - np.cos(2 * np.pi * n_values / N))
+        # Calculate the Poisson part
+        poisson_part = np.exp(-alpha * np.abs(N - 2 * n_values) / N)
+        return hann_part * poisson_part
+
+
+    corrected_data = raw_data
 
     if ui["checkbox_offset"].value:   
         for label in raw_data.columns:
-            normalized_data = normalized_data.with_columns(
+            corrected_data = corrected_data.with_columns(
                 pl.col(label).map_batches(offset_correction, return_dtype=pl.Float64 ).alias(label)
             )
     if ui["checkbox_linear"].value:   
         for label in raw_data.columns:
-            normalized_data = normalized_data.with_columns(
+            corrected_data = corrected_data.with_columns(
                 pl.col(label).map_batches(linear_correction, return_dtype=pl.Float64 ).alias(label)
+            )
+
+    if ui["checkbox_window"].value:   
+        for label in raw_data.columns:
+            corrected_data = corrected_data.with_columns(
+                pl.col(label).map_batches(windowed_correction, return_dtype=pl.Float64 ).alias(label)
             )
 
     # normalized_data = raw_data
     # normalized_data
-    return normalized_data, raw_data
+    return corrected_data, raw_data
 
 
 @app.cell
@@ -101,13 +128,13 @@ def _(mo, np, pl, ui_file):
 
 
 @app.cell
-def _(alt, mo, normalized_data, np, pl, raw_data, sillywalk, ui):
+def _(alt, corrected_data, mo, np, pl, raw_data, sillywalk, ui):
 
 
     _n_modes = ui['silder_modes'].value
 
     fourier_coefficients = sillywalk.anybody.compute_fourier_coefficients(
-        normalized_data, _n_modes
+        corrected_data, _n_modes
     )
     A = fourier_coefficients.to_numpy()[0, :_n_modes]
     B = np.insert(
@@ -124,7 +151,7 @@ def _(alt, mo, normalized_data, np, pl, raw_data, sillywalk, ui):
         harmonics = np.arange(len(A))[:, None] * 2 * np.pi * t
         return A @ np.cos(harmonics) + B @ np.sin(harmonics)
 
-    nsteps = len(normalized_data)
+    nsteps = len(corrected_data)
     reconstructed = reconstruct_signal(
         A, B, nsteps
     )  # ((A @ np.cos(harmonics) + B @ np.sin(harmonics))
@@ -133,7 +160,7 @@ def _(alt, mo, normalized_data, np, pl, raw_data, sillywalk, ui):
         {
             "steps": np.arange(nsteps),
             "original": raw_data.to_numpy()[:,0],
-            "normalized": normalized_data.to_numpy()[:, 0],
+            "corrected": corrected_data.to_numpy()[:, 0],
             "reconstructed": reconstructed,
 
         }
@@ -158,6 +185,8 @@ def _(all_df, mo):
       {"silder_modes": mo.ui.number(1, 25, value = 4, label="modes"),
        "checkbox_offset": mo.ui.checkbox(label = "Offset correction"),
        "checkbox_linear": mo.ui.checkbox(label="linear correction"),
+       "checkbox_window": mo.ui.checkbox(label="Windowed correction"),
+       "number_window":  mo.ui.number(0.05,0.5, step=0.05)
       }
     )
 
@@ -175,6 +204,7 @@ def _():
     import numpy as np
     import polars as pl
     import sillywalk
+    from scipy import signal
 
     return alt, np, pl, sillywalk
 
