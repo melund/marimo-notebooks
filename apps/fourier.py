@@ -10,6 +10,7 @@
 #     "scipy==1.16.0"
 # ]
 # ///
+
 import marimo
 
 __generated_with = "0.14.16"
@@ -93,10 +94,9 @@ def _(chart, mo, ui, ui_dropdown):
 
 
 @app.cell
-def _(mo, np, pl, requests, ui_file):
+def _(io, mo, np, pl, requests, ui_file):
     if ui_file.value:
         file_name = ui_file.value[0].name
-        import io
         _file = io.BytesIO(ui_file.value[0].contents)
     else:
         file_name = "2014001_C2_03.npz"
@@ -106,11 +106,11 @@ def _(mo, np, pl, requests, ui_file):
             _file = io.BytesIO(response.content)
         else:
             _file = open(file_path, 'rb')
-    
+
     with np.load(_file) as _npz_file:
         _alldata = dict(_npz_file.items())
     _file.close()
-    
+
 
     _time_var = "Main.Studies.InverseDynamicStudy.Output.Abscissa.t"
 
@@ -224,6 +224,7 @@ def _():
 
 @app.cell
 def _():
+    import io
     import altair as alt
     import numpy as np
     import polars as pl
@@ -231,7 +232,7 @@ def _():
     import sillywalk
     from scipy import signal
 
-    return alt, np, pl, requests, sillywalk
+    return alt, io, np, pl, requests, sillywalk
 
 
 @app.cell
