@@ -82,12 +82,16 @@ def _(chart, mo, ui, ui_dropdown):
 
 @app.cell
 def _(mo, np, pl, ui_file):
-    mo.stop(not ui_file.value)
-
-    import io
-    _file = io.BytesIO(ui_file.value[0].contents)
-    with np.load(io.BytesIO(ui_file.value[0].contents)) as _npz_file:
-        _alldata = dict(_npz_file.items())
+    if ui_file.value:
+        file_name = ui_file.value[0].name
+        import io
+        _file = io.BytesIO(ui_file.value[0].contents)
+        with np.load(io.BytesIO(ui_file.value[0].contents)) as _npz_file:
+            _alldata = dict(_npz_file.items())
+    else:
+        file_name = "2014001_C2_03.npz"
+        with np.load(mo.notebook_location() / "public" / file_name) as _npz_file:
+            _alldata = dict(_npz_file.items())
 
     
 
@@ -124,11 +128,11 @@ def _(mo, np, pl, ui_file):
             pl.lit(_alldata[col]).first().alias(new_name)
         )
 
-    return (all_df,)
+    return all_df, file_name
 
 
 @app.cell
-def _(alt, corrected_data, mo, np, pl, raw_data, sillywalk, ui):
+def _(alt, corrected_data, file_name, mo, np, pl, raw_data, sillywalk, ui):
 
 
     _n_modes = ui['silder_modes'].value
@@ -168,7 +172,10 @@ def _(alt, corrected_data, mo, np, pl, raw_data, sillywalk, ui):
     # source
 
     chart = mo.ui.altair_chart(
-    alt.Chart(source).mark_line().encode(x="steps", y="value", color="Signal").interactive()
+    alt.Chart(source).mark_line().encode(x="steps", y="value", color="Signal"
+        ).properties(
+        title=file_name
+    ).interactive()
     )
 
     return (chart,)
