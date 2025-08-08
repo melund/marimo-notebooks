@@ -90,7 +90,7 @@ def _(mo, np, pl, ui_file):
             _alldata = dict(_npz_file.items())
     else:
         file_name = "2014001_C2_03.npz"
-        with np.load(mo.notebook_location() / "public" / file_name) as _npz_file:
+        with np.load(str(mo.notebook_location() / "public" / file_name)) as _npz_file:
             _alldata = dict(_npz_file.items())
 
     
