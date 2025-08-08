@@ -1,3 +1,15 @@
+# /// script
+# requires-python = ">=3.13"
+# dependencies = [
+#     "marimo==0.14.16",
+#     "altair==5.5.0",
+#     "pandas==2.3.1",
+#     "numpy==2.3.2",
+#     "requests==2.32.4",
+#     "sillywalk==1.0.0a1",
+#     "scipy==1.16.0"
+# ]
+# ///
 import marimo
 
 __generated_with = "0.14.16"
@@ -81,18 +93,23 @@ def _(chart, mo, ui, ui_dropdown):
 
 
 @app.cell
-def _(mo, np, pl, ui_file):
+def _(mo, np, pl, requests, ui_file):
     if ui_file.value:
         file_name = ui_file.value[0].name
         import io
         _file = io.BytesIO(ui_file.value[0].contents)
-        with np.load(io.BytesIO(ui_file.value[0].contents)) as _npz_file:
-            _alldata = dict(_npz_file.items())
     else:
         file_name = "2014001_C2_03.npz"
-        with np.load(str(mo.notebook_location() / "public" / file_name)) as _npz_file:
-            _alldata = dict(_npz_file.items())
-
+        file_path = str(mo.notebook_location() / "public" / file_name)
+        if file_path.startswith('http'):
+            response  = requests.get(file_path)
+            _file = io.BytesIO(response.content)
+        else:
+            _file = open(file_path, 'rb')
+    
+    with np.load(_file) as _npz_file:
+        _alldata = dict(_npz_file.items())
+    _file.close()
     
 
     _time_var = "Main.Studies.InverseDynamicStudy.Output.Abscissa.t"
@@ -210,10 +227,11 @@ def _():
     import altair as alt
     import numpy as np
     import polars as pl
+    import requests
     import sillywalk
     from scipy import signal
 
-    return alt, np, pl, sillywalk
+    return alt, np, pl, requests, sillywalk
 
 
 @app.cell
