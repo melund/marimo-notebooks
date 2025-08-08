@@ -5,7 +5,15 @@ app = marimo.App(width="medium")
 
 
 @app.cell
+def _(mo):
+    ui_file = mo.ui.file(label="Upload trial data")
+    ui_file
+    return (ui_file,)
+
+
+@app.cell
 def _(all_df, np, pl, ui, ui_dropdown):
+
     raw_data = all_df.select(pl.col(ui_dropdown.value))
 
 
@@ -39,21 +47,22 @@ def _(all_df, np, pl, ui, ui_dropdown):
 
 
 @app.cell
-def _(chart, mo, ui, ui_dropdown, ui_file):
-    mo.vstack([ui_file, ui_dropdown, ui.hstack(justify= "start"), chart])
+def _(chart, mo, ui, ui_dropdown):
+    mo.vstack([ui_dropdown, ui.hstack(justify= "start"), chart])
 
     return
 
 
 @app.cell
-def _(file, np, pl, ui_file):
-    # if ui_file.value:
-    file_name = file.value
-    # else:
-    #     file_name = "apps/2014001_C2_03.npz"
+def _(mo, np, pl, ui_file):
+    mo.stop(not ui_file.value)
 
-    with np.load(file_name) as npz_file:
-        _alldata = dict(npz_file.items())
+    import io
+    _file = io.BytesIO(ui_file.value[0].contents)
+    with np.load(io.BytesIO(ui_file.value[0].contents)) as _npz_file:
+        _alldata = dict(_npz_file.items())
+
+    
 
     _time_var = "Main.Studies.InverseDynamicStudy.Output.Abscissa.t"
 
@@ -93,6 +102,8 @@ def _(file, np, pl, ui_file):
 
 @app.cell
 def _(alt, mo, normalized_data, np, pl, raw_data, sillywalk, ui):
+
+
     _n_modes = ui['silder_modes'].value
 
     fourier_coefficients = sillywalk.anybody.compute_fourier_coefficients(
@@ -124,13 +135,13 @@ def _(alt, mo, normalized_data, np, pl, raw_data, sillywalk, ui):
             "original": raw_data.to_numpy()[:,0],
             "normalized": normalized_data.to_numpy()[:, 0],
             "reconstructed": reconstructed,
-        
+
         }
     ).unpivot(index="steps", variable_name="Signal")
     # source
 
     chart = mo.ui.altair_chart(
-        alt.Chart(source).mark_line().encode(x="steps", y="value", color="Signal").interactive()
+    alt.Chart(source).mark_line().encode(x="steps", y="value", color="Signal").interactive()
     )
 
     return (chart,)
@@ -139,7 +150,9 @@ def _(alt, mo, normalized_data, np, pl, raw_data, sillywalk, ui):
 @app.cell
 def _(all_df, mo):
 
-    ui_dropdown = mo.ui.dropdown(options=all_df.columns, value=all_df.columns[0], label="Variable:")
+    _label = all_df.columns[0]
+
+    ui_dropdown = mo.ui.dropdown(options=all_df.columns, value=_label, label="Variable:")
 
     ui = mo.ui.dictionary(
       {"silder_modes": mo.ui.number(1, 25, value = 4, label="modes"),
@@ -152,10 +165,8 @@ def _(all_df, mo):
 
 
 @app.cell
-def _(mo):
-    ui_file = mo.ui.file(label="Upload trial data")
-
-    return (ui_file,)
+def _():
+    return
 
 
 @app.cell
