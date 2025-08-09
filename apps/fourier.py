@@ -41,25 +41,32 @@ def _(all_df, np, pl, ui, ui_dropdown):
         correction = np.linspace(0.5*(y[-1]-y[0]), 0.5*(y[0]-y[-1]), len(y))
         return y + correction
 
-    def windowed_correction(y):
-        """Add Tukey window correction to y so that the last element coincides with the first."""
-        N = len(y)
-        if N < 2:
-            return y
-        wl = int(N*ui["number_window"].value)
-        hp_wnd = hann_poisson_window(wl*2, 2)
-        window = np.concatenate((hp_wnd[-wl:], np.zeros(N-2*wl), hp_wnd[:wl]))
-        lin_correction = np.linspace(0.5*(y[-1]-y[0]), 0.5*(y[0]-y[-1]), N)
-        correction = np.multiply(lin_correction, window)
-        return y + correction
 
-    def hann_poisson_window(N, alpha):
-        n_values = np.arange(1, N + 1)
-        # Calculate the Hann part
-        hann_part = 0.5 * (1 - np.cos(2 * np.pi * n_values / N))
-        # Calculate the Poisson part
-        poisson_part = np.exp(-alpha * np.abs(N - 2 * n_values) / N)
-        return hann_part * poisson_part
+    def windowed_correction(
+        y, eps: float = 0.1
+    ) -> np.ndarray:
+        y = np.asarray(y, dtype=float)
+        N = y.size
+        if N < 2:
+            return y.copy()
+
+        # Clamp eps to (0, 0.5] and compute a reasonable window length
+        eps = ui["number_window"].value
+
+        taper_len = max(1, min(int(round(N * eps)), N // 2))
+
+        # Build an inverted taper window that equals 1 at both ends and 0 in the
+        # interior, using a quarter-sine taper over taper_len samples at each end.
+        window = np.zeros(N, dtype=float)
+        i = np.arange(taper_len, dtype=float)
+        left = 1.0 - np.sin(0.5 * np.pi * (i / (taper_len - 1)))  # 1 -> 0
+        right = 1.0 - np.sin(0.5 * np.pi * (1 - i / (taper_len - 1)))  # 0 -> 1
+        window[:taper_len] = left
+        window[-taper_len:] = right
+
+        lin_correction = np.linspace(0.5 * (y[-1] - y[0]), 0.5 * (y[0] - y[-1]), N)
+        correction = lin_correction * window
+        return y + correction
 
 
     corrected_data = raw_data
@@ -146,6 +153,13 @@ def _(io, mo, np, pl, requests, ui_file):
         )
 
     return all_df, file_name
+
+
+@app.cell
+def _():
+    # fourier_coefficients.rename(lambda column_name: column_name.rsplit("_",1)[-1]).unpivot(value_name="value", variable_name="Fourier coefficient")
+
+    return
 
 
 @app.cell
